@@ -2,14 +2,14 @@ import { useEffect } from "react";
 import type { NextPage } from "next";
 import { useLocalStorage } from "usehooks-ts";
 import { MetaHeader } from "~~/components/MetaHeader";
-import { ContractUI } from "~~/components/scaffold-eth";
+import { DiamondContractUI } from "~~/components/diamond/DiamondContractUI";
 import { ContractName } from "~~/utils/scaffold-eth/contract";
 import { getContractNames } from "~~/utils/scaffold-eth/contractNames";
 
 const selectedContractStorageKey = "scaffoldEth2.selectedContract";
 const contractNames = getContractNames();
 
-const Debug: NextPage = () => {
+const DebugDiamond: NextPage = () => {
   const [selectedContract, setSelectedContract] = useLocalStorage<ContractName>(
     selectedContractStorageKey,
     contractNames[0],
@@ -23,16 +23,16 @@ const Debug: NextPage = () => {
 
   useEffect(() => {
     const _contractNames = contractNames.filter(
-      contractName => !contractName.includes("Facet") && !contractName.includes("DiamondContract"),
+      contractName => contractName.includes("Facet") || contractName.includes("DiamondContract"),
     );
-    setSelectedContract(_contractNames[0]);
+    setSelectedContract(_contractNames[_contractNames.length - 1]);
   }, []);
 
   return (
     <>
       <MetaHeader
-        title="Debug Contracts | Scaffold-ETH 2"
-        description="Debug your deployed 🏗 Scaffold-ETH 2 contracts in an easy way"
+        title="Debug Diamond Contracts | Scaffold-ETH 2"
+        description="Debug your deployed 🏗 Scaffold-ETH 2 diamond contracts in an easy way"
       />
       <div className="flex flex-col gap-y-6 lg:gap-y-8 py-8 lg:py-12 justify-center items-center">
         {contractNames.length === 0 ? (
@@ -42,7 +42,7 @@ const Debug: NextPage = () => {
             {contractNames.length > 1 && (
               <div className="flex flex-row gap-2 w-full max-w-7xl pb-1 px-6 lg:px-10 flex-wrap">
                 {contractNames
-                  .filter(contractName => !contractName.includes("Facet") && !contractName.includes("DiamondContract"))
+                  .filter(contractName => contractName.includes("Facet") || contractName.includes("DiamondContract"))
                   .map(contractName => (
                     <button
                       className={`btn btn-secondary btn-sm font-thin ${
@@ -57,13 +57,15 @@ const Debug: NextPage = () => {
               </div>
             )}
             {contractNames
-              .filter(contractName => !contractName.includes("Facet") && !contractName.includes("DiamondContract"))
+              .filter(contractName => contractName.includes("Facet") || contractName.includes("DiamondContract"))
               .map(contractName => (
-                <ContractUI
-                  key={contractName}
-                  contractName={contractName}
-                  className={contractName === selectedContract ? "" : "hidden"}
-                />
+                <>
+                  <DiamondContractUI
+                    key={contractName}
+                    contractName={contractName}
+                    className={contractName === selectedContract ? "" : "hidden"}
+                  />
+                </>
               ))}
           </>
         )}
@@ -74,7 +76,7 @@ const Debug: NextPage = () => {
           You can debug & interact with your deployed contracts here.
           <br /> Check{" "}
           <code className="italic bg-base-300 text-base font-bold [word-spacing:-0.5rem] px-1">
-            packages / nextjs / pages / debug.tsx
+            packages / nextjs / pages / debug-diamond.tsx
           </code>{" "}
         </p>
       </div>
@@ -82,4 +84,4 @@ const Debug: NextPage = () => {
   );
 };
 
-export default Debug;
+export default DebugDiamond;
