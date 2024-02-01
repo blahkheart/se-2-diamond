@@ -1,6 +1,6 @@
 # 🏗 Scaffold-ETH-2 Diamond
 
-A simple template to help you deploy ERC2535 (Diamond Standard) upgradable smart contracts easily using Scaffold-eth 2.
+A simple template to help you deploy [ERC2535 (Diamond Standard)](https://eips.ethereum.org/EIPS/eip-2535) upgradable smart contracts easily using Scaffold-eth 2.
 
 
 
