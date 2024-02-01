@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-// import { getSelectors, FacetCutAction } from "./libraries/diamond.js";
+// import { ownershipAbi } from "./utils/ownershipAbi";
+// import { getSelectors } from "./utils";
 
 interface ThisInterface {
   contract: {
@@ -13,6 +14,49 @@ interface ThisInterface {
   get: () => void;
 }
 
+export function getSelectors(contract: any) {
+  const signatures = Object.keys(contract.interface.functions);
+  const selectors = signatures.reduce((acc: any, val: any) => {
+    if (val !== "init(bytes)") {
+      acc.push(contract.interface.getSighash(val));
+    }
+    return acc;
+  }, []);
+  selectors.contract = contract;
+  selectors.remove = remove;
+  selectors.get = get;
+  return selectors;
+}
+
+function remove(this: ThisInterface, functionNames: any) {
+  const selectors: any = this.filter(v => {
+    for (const functionName of functionNames) {
+      if (v === this.contract.interface.getSighash(functionName)) {
+        return false;
+      }
+    }
+    return true;
+  });
+  selectors.contract = this.contract;
+  selectors.remove = this.remove;
+  selectors.get = this.get;
+  return selectors;
+}
+
+function get(this: ThisInterface, functionNames: any) {
+  const selectors: any = this.filter(v => {
+    for (const functionName of functionNames) {
+      if (v === this.contract.interface.getSighash(functionName)) {
+        return true;
+      }
+    }
+    return false;
+  });
+  selectors.contract = this.contract;
+  selectors.remove = this.remove;
+  selectors.get = this.get;
+  return selectors;
+}
 /**
  * Deploys a contract named "YourContract" using the deployer account and
  * constructor arguments set to the deployer address
@@ -34,61 +78,11 @@ const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEn
   */
   const { deployer } = await hre.getNamedAccounts();
   const { deploy } = hre.deployments;
-
-  // await deploy("YourDiamondContract", {
-  //   from: deployer,
-  //   // Contract constructor arguments
-  //   args: [deployer],
-  //   log: true,
-  //   // autoMine: can be passed to the deploy function to make the deployment process faster on local networks by
-  //   // automatically mining the contract deployment transaction. There is no effect on live networks.
-  //   autoMine: true,
-  // });
-  // Deploy YourDiamondContract
+  const dev = "0xE11Cd5244DE68D90755a1d142Ab446A4D17cDC10";
   const FacetCutAction: any = { Add: 0, Replace: 1, Remove: 2 };
-  function getSelectors(contract: any) {
-    const signatures = Object.keys(contract.interface.functions);
-    const selectors = signatures.reduce((acc: any, val: any) => {
-      if (val !== "init(bytes)") {
-        acc.push(contract.interface.getSighash(val));
-      }
-      return acc;
-    }, []);
-    selectors.contract = contract;
-    selectors.remove = remove;
-    selectors.get = get;
-    return selectors;
-  }
 
-  function remove(this: ThisInterface, functionNames: any) {
-    const selectors: any = this.filter(v => {
-      for (const functionName of functionNames) {
-        if (v === this.contract.interface.getSighash(functionName)) {
-          return false;
-        }
-      }
-      return true;
-    });
-    selectors.contract = this.contract;
-    selectors.remove = this.remove;
-    selectors.get = this.get;
-    return selectors;
-  }
+  // Deploy YourDiamondContract
 
-  function get(this: ThisInterface, functionNames: any) {
-    const selectors: any = this.filter(v => {
-      for (const functionName of functionNames) {
-        if (v === this.contract.interface.getSighash(functionName)) {
-          return true;
-        }
-      }
-      return false;
-    });
-    selectors.contract = this.contract;
-    selectors.remove = this.remove;
-    selectors.get = this.get;
-    return selectors;
-  }
   // Get the deployed contract
   // const yourContract = await hre.ethers.getContract("YourContract", deployer);
   // Deploy DiamondInit
@@ -100,12 +94,10 @@ const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEn
   console.log("DiamondInit deployed:", diamondInit.address);
 
   // set the `facetCuts` variable
-
-  const FacetNames = ["DiamondCutFacet", "DiamondLoupeFacet", "OwnershipFacet"];
+  const FacetNames = ["DiamondCutFacet", "DiamondLoupeFacet", "OwnershipFacet", "Test1Facet", "Test2Facet"];
   // The `facetCuts` variable is the FacetCut[] that contains the functions to add during diamond deployment
   const facetCuts = [];
   for (const FacetName of FacetNames) {
-    // const Facet = await hre.ethers.getContractFactory(FacetName);
     await deploy(FacetName, {
       from: deployer,
       args: [],
@@ -144,6 +136,74 @@ const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEn
 
   // logging the address of the diamond
   console.log("Diamond deployed:", diamond.address);
+  // transfer diamond ownership
+  const ownershipAbi = [
+    {
+      inputs: [
+        {
+          internalType: "address",
+          name: "_user",
+          type: "address",
+        },
+        {
+          internalType: "address",
+          name: "_contractOwner",
+          type: "address",
+        },
+      ],
+      name: "NotContractOwner",
+      type: "error",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: "address",
+          name: "previousOwner",
+          type: "address",
+        },
+        {
+          indexed: true,
+          internalType: "address",
+          name: "newOwner",
+          type: "address",
+        },
+      ],
+      name: "OwnershipTransferred",
+      type: "event",
+    },
+    {
+      inputs: [],
+      name: "owner",
+      outputs: [
+        {
+          internalType: "address",
+          name: "owner_",
+          type: "address",
+        },
+      ],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [
+        {
+          internalType: "address",
+          name: "_newOwner",
+          type: "address",
+        },
+      ],
+      name: "transferOwnership",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ];
+
+  const deployedDiamond = await hre.ethers.getContractAt(ownershipAbi, diamond.address, deployer);
+  const tx = await deployedDiamond.transferOwnership(dev);
+  console.log("Transfered ownership: ", tx.hash);
 };
 
 export default deployYourContract;
